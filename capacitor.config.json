@@ -1,0 +1,6 @@
+{
+  "appId": "ir.karman.wallet",
+  "appName": "کارمن",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
