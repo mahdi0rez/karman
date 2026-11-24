@@ -1,7 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Check, ChevronLeft, Clock3, Edit3, Plus, Wallet, X, Trash2, Play, Square, TrendingUp, BriefcaseBusiness, FileText, Settings2 } from 'lucide-react';
+import { Activity, ArrowDownLeft, ArrowUpRight, CalendarDays, Check, ChevronLeft, Clock3, Edit3, Plus, Wallet, X, Trash2, Play, Square, TrendingUp, BriefcaseBusiness, FileText, Settings2, Moon, Sun, Monitor } from 'lucide-react';
 import { loadState, saveState } from './lib/db';
 import { calculatePay, durationMinutes, faDate, faTime, formatDuration, inRange, startOfWeek, toman } from './lib/finance';
+import ThemeSelector from './components/ThemeSelector.jsx';
+
+// Initialize theme immediately to prevent flash
+(function initTheme() {
+  const savedTheme = localStorage.getItem('karman-theme');
+  const isSystem = !savedTheme || savedTheme === 'system';
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const actualTheme = isSystem ? (prefersDark ? 'dark' : 'light') : savedTheme;
+  document.documentElement.className = '';
+  document.documentElement.classList.add(actualTheme);
+})();
 
 const initialState = { hourlyRate: 50000, activeStart: null, pendingSession: null, sessions: [], transactions: [] };
 const uid = () => crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -14,6 +25,32 @@ function App() {
   const [period, setPeriod] = useState('month');
   const [modal, setModal] = useState(null);
   const [toast, setToast] = useState('');
+  const [theme, setTheme] = useState(() => localStorage.getItem('karman-theme') || 'system');
+
+  // Apply theme to document root
+  useEffect(() => {
+    const isSystem = theme === 'system';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const actualTheme = isSystem ? (prefersDark ? 'dark' : 'light') : theme;
+    document.documentElement.className = '';
+    document.documentElement.classList.add(actualTheme);
+    localStorage.setItem('karman-theme', theme);
+  }, [theme]);
+
+  // Watch for system preference changes
+  useEffect(() => {
+    if (theme !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      const actualTheme = mediaQuery.matches ? 'dark' : 'light';
+      document.documentElement.className = '';
+      document.documentElement.classList.add(actualTheme);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   useEffect(() => { loadState().then(saved => { if (saved) setData({ ...initialState, ...saved }); }).catch(() => notify('ذخیره‌سازی در این مرورگر در دسترس نیست')).finally(() => setReady(true)); }, []);
   useEffect(() => { if (!ready) return; saveState(data).catch(() => notify('ذخیره اطلاعات ناموفق بود')); }, [data, ready]);
@@ -76,7 +113,7 @@ function App() {
 
   if (!ready) return <div className="loading"><div className="loader"/>در حال آماده‌سازی اطلاعات…</div>;
   return <div className="app-shell">
-    <header className="topbar"><div className="brand"><div className="brand-mark"><Activity size={21}/></div><div><strong>کارمَن</strong><small>مدیریت زمان و درآمد</small></div></div><button className="icon-button" onClick={() => setModal({type:'rate'})} aria-label="تنظیم دستمزد"><Settings2 size={20}/></button></header>
+    <header className="topbar"><div className="brand"><div className="brand-mark"><Activity size={21}/></div><div><strong>کارمَن</strong><small>مدیریت زمان و درآمد</small></div></div><button className="icon-button" onClick={() => setModal({type:'rate'})} aria-label="تنظیم دستمزد"><Settings2 size={20}/></button><ThemeSelector /></header>
     <main className="main-content">
       {page === 'home' ? <>
         <div className="welcome-row"><div><p className="eyebrow">داشبورد</p><h1>خلاصه وضعیت شما</h1></div><div className="today-chip"><CalendarDays size={15}/>{faDate(new Date())}</div></div>
